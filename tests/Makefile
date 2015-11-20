@@ -1,6 +1,6 @@
 CSCOPTS= 
 
-SRCFILES = common.scm configf.scm run_configf.scm struct-indexer.scm
+SRCFILES = run.scm
 
 OFILES   = $(SRCFILES:%.scm=%.o)
 
@@ -13,11 +13,11 @@ help:
 	@echo "make clean - clean up .o's and binaries"
 
 test: $(OFILES)
-	csc $(CSCOPTS) $(OFILES) -o run_configf
-	./run_configf
+	csc $(CSCOPTS) $(OFILES) -o run_ini-file-test
+	./run_ini-file-test
 
 %.o : %.scm
 	csc $(CSCOPTS) -c $<
 
 clean:
-	rm -f *.o test-configf
+	rm -f *.o run_ini-file-test
