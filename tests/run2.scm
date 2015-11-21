@@ -7,3 +7,4 @@
 
 (let ((data (read-ini "example2.ini")))
   (print data))
+
