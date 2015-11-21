@@ -67,6 +67,51 @@
      (begin body ...))
     ((_ str) (void))))
 
+
+;; system and other macros  produce lines to be used.  These do not come
+;; from the input port.  the stuffed-lines parameter keeps a list
+;; of lines that have been stuffed in to preempt the input port when
+;; getting the next line of input
+(define stuffed-lines (make-parameter (list)))
+
+
+;; process line, search for macros, then hand off line
+;; if macro generates new lines, add them to stuffed-lines parameter
+(define (preprocess-line line)
+  (match-string
+   line
+   ;; include)
+   (("\\s*\\[\\s*include\\s+([^\\]]+?\\s*)\\]" include-file)
+    (let* ((all-lines (read-lines include-file))
+           (first-line (if (null? all-lines) "" (car all-lines)))
+           (rest-lines (if (null? all-lines) '() (cdr all-lines)))
+           (prev-stuffed-lines (stuffed-lines))
+           )
+      (stuffed-lines (append rest-lines prev-stuffed-lines))
+      (preprocess-line first-line)))
+           
+    
+    ;;(print "HELLO got include file " include-file)
+    ;;"include: yup.")
+   ;; no macros; pass it along unmolested
+   (else line)))
+;;  (string-substitute "(pay)roll\\.(dat)"  "\\2roll.\\1" line #t))
+
+
+;; get next line and preprocess it;
+;;  1) check stuffed-lines parameter to preempt input port
+;;  2) run preprocessor to handle new macros
+(define (read-and-preprocess-line port)
+  (if (null? (stuffed-lines))
+      (preprocess-line (read-line port))
+      (let* ((temp-lines (stuffed-lines))
+             (next-stuffed-line (car temp-lines))
+             (rest-stuffed-lines (cdr temp-lines)))
+        (stuffed-lines rest-stuffed-lines)
+        (preprocess-line next-stuffed-line))))
+    
+
+
 ;; Read a single property from the port.
 ;; If it's a section header, returns a symbol.
 ;; If it's a name/value pair, returns a pair.
@@ -74,7 +119,7 @@
   (case-lambda
     (() (read-property (current-input-port)))
     ((port)
-     (let ((line            (read-line port))
+     (let ((line            (read-and-preprocess-line port))
 	   (name-value-patt (string-append "([^:;=#]+?)" (property-separator-patt) "(.*?) *")))
        (match-string line
          ;; Section header.
